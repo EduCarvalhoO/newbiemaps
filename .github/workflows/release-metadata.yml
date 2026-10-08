@@ -1,0 +1,74 @@
+name: Release metadata
+
+# When a release is published (or this workflow is run by hand for an existing tag),
+# compute the SHA-256 of the .zip/.msi assets, attach SHA256SUMS.txt to the release
+# and update latest.json on main (read by the website). No secrets are needed.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to (re)generate metadata for, e.g. v0.1.0
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-metadata
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EVENT_TAG: ${{ github.event.release.tag_name }}
+      INPUT_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Resolve tag
+        run: |
+          TAG="${EVENT_TAG:-$INPUT_TAG}"
+          if [ -z "$TAG" ]; then echo "no tag given" >&2; exit 1; fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Download release assets
+        run: |
+          mkdir -p assets
+          gh release download "$TAG" --dir assets --pattern '*.zip' --pattern '*.msi'
+          ls -l assets
+
+      - name: Build metadata
+        run: |
+          PUBLISHED_AT="$(gh release view "$TAG" --json publishedAt --jq .publishedAt)"
+          python3 tools/build_metadata.py \
+            --assets-dir assets --tag "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --out-dir out --published-at "$PUBLISHED_AT"
+          cat out/SHA256SUMS.txt
+
+      - name: Attach SHA256SUMS.txt to the release
+        run: gh release upload "$TAG" out/SHA256SUMS.txt --clobber
+
+      - name: Update latest.json on main (only for the latest stable release)
+        run: |
+          LATEST_TAG="$(gh release view --json tagName --jq .tagName 2>/dev/null || true)"
+          if [ "$LATEST_TAG" != "$TAG" ]; then
+            echo "$TAG is not the latest stable release; leaving latest.json alone."
+            exit 0
+          fi
+          cp out/latest.json latest.json
+          if git diff --quiet -- latest.json; then
+            echo "latest.json already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add latest.json
+          git commit -m "chore: update latest.json for $TAG"
+          git push origin HEAD:main
