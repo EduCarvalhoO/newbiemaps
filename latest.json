@@ -1,8 +1,23 @@
 {
   "schema": 1,
-  "version": null,
-  "tag": null,
-  "published_at": null,
-  "release_url": null,
-  "files": []
+  "version": "0.1.0",
+  "tag": "v0.1.0",
+  "published_at": "2026-10-11T13:25:43Z",
+  "release_url": "https://github.com/EduCarvalhoO/newbiemaps/releases/tag/v0.1.0",
+  "files": [
+    {
+      "name": "NewbieMaps-0.1.0-win-x64.msi",
+      "type": "msi",
+      "size": 53285565,
+      "sha256": "963fa0f2c8f59003a376115484ce1fa51dd565925a8b9c298aa6e559865241b3",
+      "url": "https://github.com/EduCarvalhoO/newbiemaps/releases/download/v0.1.0/NewbieMaps-0.1.0-win-x64.msi"
+    },
+    {
+      "name": "NewbieMaps-0.1.0-win-x64.zip",
+      "type": "zip",
+      "size": 63828569,
+      "sha256": "41237203cfcfb76a07b580fa554bcaf05e736063346e7b5967ab9dd3a34611cb",
+      "url": "https://github.com/EduCarvalhoO/newbiemaps/releases/download/v0.1.0/NewbieMaps-0.1.0-win-x64.zip"
+    }
+  ]
 }
